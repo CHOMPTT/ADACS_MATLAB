@@ -4,14 +4,15 @@ clear all;
 
 t_start = 1;
 t_end =10001;
-t_end =5400*5
+t_end =5400*5;
 t_step = 10;
 
 t=t_start:t_step:t_end ;    	% time vector in seconds
 
 % initialize your variables
-B_Vect = 1.0e+04*[0, 0, 0];
-B_Vect = transpose(B_Vect);
+
+%Prev_B_Vect = [0, 0, 0];
+
 
 w_i_e = [0; 0; 0.7292115 * 10^-4] ;   % Earth’s angular velocity in ECI/ECEF  
 w_e_s = [0 ; 0; 0] ;		           % S/C angular velocity w.r.t ECEF in S/C frame
@@ -46,7 +47,7 @@ c=0.34;    %Spacecraft length along z-axis  (m)
 %state(12)=q(3)
 %state(13)=q(4)
 % begin simulation
-    for i=1:length(t)-1  
+for i=1:length(t)-1  
        
 % ROTATION MATRICES 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -58,7 +59,9 @@ R_e_i = [cos(theta_earth), sin(theta_earth), 0; -sin(theta_earth), cos(theta_ear
 
 %%%%%%% ECEF -> S/C : Earth Fixed to Spacecraft Fixed Ref. Frame %%%%%
 
-R_s_e = [q(1)^2-q(2)^2-q(3)^2+q(4)^2, 2*(q(1)*q(2)+q(3)*q(4)), 2*(q(1)*q(3)-q(2)*q(4)); 2*(q(1)*q(2)-q(3)*q(4)), -q(1)^2+q(2)^2-q(3)^2+q(4)^2, 2*(q(2)*q(3)+q(1)*q(4)); 2*(q(1)*q(3)+q(2)*q(4)), 2*(q(2)*q(3)+q(1)*q(4)), -q(1)^2-q(2)^2+q(3)^2+q(4)^4] ;
+R_s_e = [q(1)^2-q(2)^2-q(3)^2+q(4)^2, 2*(q(1)*q(2)+q(3)*q(4)), 2*(q(1)*q(3)-q(2)*q(4)); 
+         2*(q(1)*q(2)-q(3)*q(4)), -q(1)^2+q(2)^2-q(3)^2+q(4)^2, 2*(q(2)*q(3)+q(1)*q(4)); 
+         2*(q(1)*q(3)+q(2)*q(4)), 2*(q(2)*q(3)+q(1)*q(4)), -q(1)^2-q(2)^2+q(3)^2+q(4)^4] ;
 
 %%%%% ECI -> S/C : Inertial to Spacecraft (Body) Fixed Ref. Frame %%%%
 R_s_i = R_s_e*R_e_i   ;
@@ -72,9 +75,7 @@ R_s_i = R_s_e*R_e_i   ;
      Rx = a/2 ;
      Ry = b/2 ;
      Rz = c/2 ;
-     
      Rcom_i = [Rx ; Ry; Rz];             % distance from c.o.m to side of s/c in direction of unit vector 
-     
      Fd = importdata('ElaNaXIX_DisturbanceForces.mat');  % Disturbance force vector in ECI ref. frame, in Newtons
                 
    % Disturbance force expressed in S/C ref. frame
@@ -82,107 +83,60 @@ R_s_i = R_s_e*R_e_i   ;
 
    %  Compute the disturbance Torque from Fd
     Td = cross(Rcom_i, Fd_s) ;                  % expressed in S/C Ref. Frame
-    %Td = [0;0;0];
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     % EPS/MODE BLOCK %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %
     %   Select a mode for the whichever system you want to run (RW or MT)
-EPS_MODE='POINTING';%DETUMBLE or POINTING
-%EPS_MODE='DETUMBLE';%DETUMBLE or POINTING
-
+      %EPS_MODE='POINTING';%DETUMBLE or POINTING or DRIFTING
+      %EPS_MODE='DETUMBLE';%DETUMBLE or POINTING or DRIFTING
+      EPS_MODE = 'DRIFTING';%DETUMBLE or POINTING or DRIFTING
+    %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
- % CONTROLS BLOCK %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %   Get the current Euler Angles from the quaternion
-    qt = transpose(state(10:13));
-    zyx = Quat2Eul321(qt);
-    
-    %   Apply your control law (PD and B-dot) here
-    %   Compute commanded torque 
-    %
-if EPS_MODE == 'DETUMBLE';
-% %BDOT
-% %% convert the current R-vector from S/C into ECEF from there use ECEF Position to LLA 
-r_sct = transpose(state(1:3));
- lla = ecef2lla(r_sct) ; 
- 
- [current_B_Vect, H, DEC, DIP, F] = wrldmagm(lla(3), lla(1), lla(2), decyear(2015,10,25),'2015');
- %disp(current_B_Vect)
- B_Vect(:,i) = [current_B_Vect*10^-09];
- %B_Vect = transpose(B_Vect)
-     K = 4*10^4; %Proportional Gain
-     %K = 1;
-     if (i<2);
-     B_DOT(:,1)=[0,0,0];
-     else
-         B_DOT(:,i)= (B_Vect(:,i)-B_Vect(:,i-1))*(1/t_step);
+  %% CONTROLS BLOCK %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+     if EPS_MODE == 'DETUMBLE';
+         k = 4*10^4;%Proportional Gain
+         MAX_DIPOLE = 0.03774; %Am^2 %Hardware Limitation
+
+         [Tc , Prev_B_Vect] = B_DOT_CONTROL(k, state, MAX_DIPOLE, i, t_step, Prev_B_Vect);
      end
-     M = -K*B_DOT(:,i);
-     if M == 0
-     M = [0,0,0];
+
+     if EPS_MODE == 'POINTING'
+        k= [0.2;0.2 ;0.2];%Proportional Gain
+        c = [0.5;0.5; 0.5];%Derivative Gain
+        MAX_TORQUE = 3.75e-3; %N*m %Hardware Limitation
+
+        Tc = RW_PD_CONTROL(k, c, state, MAX_TORQUE);
      end
-     %limit for max dipole moment
-     if size(M)==[1,3]
-     M=transpose(M);
+
+     if EPS_MODE == 'DRIFTING';
+
+        Tc = [0;0;0];
      end
-     max_dipole_moment = 0.03774; %Am^2
-     for j = 1:length(M);
-         if (M(j,1)) > max_dipole_moment
- 	       M(j,1) = max_dipole_moment;
-         end
-        if (M(j,1)) < -max_dipole_moment
- 	       M(j,1) = -max_dipole_moment;
-        end
-     end
- disp(M)
- B_Vect(:,i)= transpose(B_Vect(:,i));
- Tc=  cross(M,B_Vect(:,i));
-end
 
-
-
-
-
-if EPS_MODE == 'POINTING'
-
-%PD Controller for Reaction Wheels
-k = [0.2;0.2 ;0.2 ]; 
-c = [0.5;0.5; 0.5 ];
-max_torque = 3.75e-3;
-
-T_x = -k(1,1)*(zyx(3)) - c(1,1)*(state(7));
-T_y = -k(2,1)*(zyx(2)) - c(2,1)*(state(8));
-T_z = -k(3,1)*(3.1415-abs(zyx(1))) - c(3,1)*(state(8));
-T = [T_x; T_y; T_z];
-
-% Checking for Torque Max-Min Requirements
-count = length(T);
-for j = 1:count
-   if abs(T(j,1)) >= max_torque
-        if sign(T(j,1)) == 1
-            T(j,1) = max_torque;
-        else
-            T(j,1) = -max_torque;
-        end
-    end
-end
-Tc = T;
-disp(Tc-Td)
-end
-
-%Tc = [0;0;0];
-   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     % ACTUATION NOISE BLOCK %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %
     %   Add actuation noise to the commanded torque as an 'actual torque'
+     if EPS_MODE == 'DETUMBLE';
+     sigma = 0;
+     end
+
+     if EPS_MODE == 'POINTING'
+     sigma = 0;
+     end
+
+     if EPS_MODE == 'DRIFTING';
+     sigma = 0;
+     end
+     Tc = normrnd(Tc,sigma,3,1);
     %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     % DYNAMICS BLOCK %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-    
     % RK4 Integrator
     k1 = CHOMPTT_EOM(         t, state,               Tc, Fd, Td, w_i_e);         
     k2 = CHOMPTT_EOM(t+t_step/2, state + t_step*k1/2, Tc, Fd, Td, w_i_e); 
@@ -191,10 +145,10 @@ end
 
     % Generate the state at the current time-step
     state = state + (1/6)*t_step*(k1+2*k2+2*k3+k4);
-    %disp(state)
+
     % Save the state vector for later
     state_vec(:,i) = state; 
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     % MEASUREMENT NOISE BLOCK %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %
