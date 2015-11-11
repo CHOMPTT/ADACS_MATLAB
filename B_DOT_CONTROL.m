@@ -3,8 +3,8 @@
 % This file is used to simulate the magnatorquer detumble controller (B dot)
 %
 % INPUT:
-%   k is the proportional gain (scalar) 
-%   state is the state vector (13 x 1)
+%   k = the proportional gain (scalar) 
+%   state = the state vector (13 x 1)
     %   state(1)=r_sc(1)=x position of satellite in ECI
     %   state(2)=r_sc(2)=y position of satellite in ECI
     %   state(3)=r_sc(3)=z position of satellite in ECI
@@ -19,28 +19,25 @@
     %   state(12)=q(3)
     %   state(13)=q(4)
 %   MAX_DIPOLE = maximum dipole induced by magantorquer
-%
+%   i = simulation loop index
+%   t_step = simulation time step
+%   Prev_B_Vect = B_Vect from the previous simulation loop
 % OUTPUT:
 %   Tc is the control torque (3 x 1)
-% 
+%   Prev_B_Vect = the current B vect will be used in next loop 
 
 % %% convert the current R-vector from S/C into ECEF from there use ECEF Position to LLA 
-function Tc = RW_PD_CONTROL(k, state, MAX_DIPOLE);
+function [Tc Prev_B_Vect] = B_DOT_CONTROL(K, state, MAX_DIPOLE, i, t_step, Prev_B_Vect);
  r_sct = transpose(state(1:3));
- lla = ecef2lla(r_sct) ; 
- 
+ lla = ecef2lla(r_sct); 
  [current_B_Vect, H, DEC, DIP, F] = wrldmagm(lla(3), lla(1), lla(2), decyear(2015,10,25),'2015');
- %disp(current_B_Vect)
- B_Vect(:,i) = [current_B_Vect*10^-09];
- %B_Vect = transpose(B_Vect)
-     K = 4*10^4; %Proportional Gain
-     %K = 1;
+ current_B_Vect = current_B_Vect*10^-09;
      if (i<2);
-     B_DOT(:,1)=[0,0,0];
+        B_DOT=[0,0,0];
      else
-         B_DOT(:,i)= (B_Vect(:,i)-B_Vect(:,i-1))*(1/t_step);
+        B_DOT= (current_B_Vect-Prev_B_Vect)*(1/t_step);
      end
-     M = -K*B_DOT(:,i);
+     M = -K*B_DOT;
      if M == 0
      M = [0,0,0];
      end
@@ -57,9 +54,8 @@ function Tc = RW_PD_CONTROL(k, state, MAX_DIPOLE);
  	       M(j,1) = -MAX_DIPOLE;
         end
      end
- disp(M)
- B_Vect(:,i)= transpose(B_Vect(:,i));
- Tc=  cross(M,B_Vect(:,i));
+ Tc =  cross(M,current_B_Vect);
+ Prev_B_Vect = current_B_Vect;
 end
 
 
