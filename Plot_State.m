@@ -26,7 +26,7 @@
 function Plot_State(state_vec, t);
    for k=1:13
 	figure(k)
-	plot(t(1:10),state_vec(k,:));
+	plot(t(1:numel(t)-1),state_vec(k,:));
 	xlabel('Time (s)')
 	if k==1||k==2||k==3
     	ylabel('Position(m)')
