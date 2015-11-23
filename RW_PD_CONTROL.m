@@ -27,13 +27,13 @@
 
 function Tc = RW_PD_CONTROL(k, c, state, MAX_TORQUE);
 qt = transpose(state(10:13));
-error = Quat2Eul321(qt); 
-error_dot = state(7:9);
+error = Quat2Eul321(qt) 
+error_dot = state(7:9)
 %max_torque = 3.75e-3;
 
-T_x = -k(1)*(error(3)) - c(1)*(error_dot(1));
-T_y = -k(2)*(error(2)) - c(2)*(error_dot(2));
-T_z = -k(3)*(error(1)) - c(3)*(error_dot(3));
+T_x = k(1)*(error(3)) - c(1)*(error_dot(1))
+T_y = k(2)*(error(2)) - c(2)*(error_dot(2))
+T_z = k(3)*(error(1)) - c(3)*(error_dot(3))
 T = [T_x; T_y; T_z];
 
 % Checking for Torque Max-Min Requirements

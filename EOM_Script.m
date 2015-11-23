@@ -29,6 +29,6 @@ dW_i_s = diff(W_i_s, t)
 
 s_dW_i_s = convTimeToSym(dW_i_s)
 
-dW = [We*(2*q1*dq3 + 2*q3*dq1 - 2*q2*dq4 - 2*q4*dq2) + dwx; 
-      We*(2*q1*dq4 + 2*q2*dq3 + 2*q3*dq2 + 2*q4*dq1) + dwy;
-      dwz - We*(2*q1*dq1 + 2*q2*dq2 - 2*q3*dq3 - 4*q4^3*dq4)]
+ dW = [We*(2*q1*dq3 + 2*q3*dq1 - 2*q2*dq4 - 2*q4*dq2) + dwx; 
+       We*(2*q1*dq4 + 2*q2*dq3 + 2*q3*dq2 + 2*q4*dq1) + dwy;
+       dwz - We*(2*q1*dq1 + 2*q2*dq2 - 2*q3*dq3 - 4*q4^3*dq4)]
