@@ -35,9 +35,10 @@ r_sc = state(1:3);
 q = [q1;q2;q3];
 % Angular velocity vector
 omega = [wx; wy; wz];
-
+% Angular velocity of the Earth
+wE = 0.7292115e-4; % rad/sec
 %CONSTANT(s)
-GM = 398600.4415*(10^9); %m^3/s^2
+GM_E = 3.986004415e+14;   % (m3/s2)
 
 %SAT INERTIA CONSTANTS
 Msc=3;%Spacecraft Mass := 3Kg
@@ -71,14 +72,14 @@ dq3 = dq(3);
 dq4 = -0.5*dot(omega,q);
 
 %ANGULAR ACCELERATION FROM ROTATIONAL EOM
-omega_dot_x = -(Tcx + Tdx - Iy*wy*wz + Iz*wy*wz + Iy*w_i_e(3)*q1^2*wy + Iy*w_i_e(3)*q2^2*wy - Iy*w_i_e(3)*q3^2*wy - Iy*w_i_e(3)*q4^4*wy - Iz*w_i_e(3)*q1^2*wy - Iz*w_i_e(3)*q2^2*wy + Iz*w_i_e(3)*q3^2*wy + Iz*w_i_e(3)*q4^4*wy + 2*Ix*w_i_e(3)*dq1*q3 + 2*Ix*w_i_e(3)*dq3*q1 - 2*Ix*w_i_e(3)*dq2*q4 - 2*Ix*w_i_e(3)*dq4*q2 - 2*Iy*w_i_e(3)^2*q2*q3^3 + 2*Iy*w_i_e(3)^2*q1^3*q4 + 2*Iy*w_i_e(3)^2*q2^3*q3 - 2*Iy*w_i_e(3)^2*q1*q4^5 + 2*Iz*w_i_e(3)^2*q2*q3^3 - 2*Iz*w_i_e(3)^2*q1^3*q4 - 2*Iz*w_i_e(3)^2*q2^3*q3 + 2*Iz*w_i_e(3)^2*q1*q4^5 + 2*Iy*w_i_e(3)^2*q1^2*q2*q3 + 2*Iy*w_i_e(3)^2*q1*q2^2*q4 - 2*Iy*w_i_e(3)^2*q1*q3^2*q4 - 2*Iy*w_i_e(3)^2*q2*q3*q4^4 - 2*Iz*w_i_e(3)^2*q1^2*q2*q3 - 2*Iz*w_i_e(3)^2*q1*q2^2*q4 + 2*Iz*w_i_e(3)^2*q1*q3^2*q4 + 2*Iz*w_i_e(3)^2*q2*q3*q4^4 - 2*Iy*w_i_e(3)*q1*q4*wz - 2*Iy*w_i_e(3)*q2*q3*wz + 2*Iz*w_i_e(3)*q1*q4*wz + 2*Iz*w_i_e(3)*q2*q3*wz)/Ix;
-omega_dot_y = -(Tcy + Tdy + Ix*wx*wz - Iz*wx*wz - Ix*w_i_e(3)*q1^2*wx - Ix*w_i_e(3)*q2^2*wx + Ix*w_i_e(3)*q3^2*wx + Ix*w_i_e(3)*q4^4*wx + Iz*w_i_e(3)*q1^2*wx + Iz*w_i_e(3)*q2^2*wx - Iz*w_i_e(3)*q3^2*wx - Iz*w_i_e(3)*q4^4*wx + 2*Iy*w_i_e(3)*dq1*q4 + 2*Iy*w_i_e(3)*dq2*q3 + 2*Iy*w_i_e(3)*dq3*q2 + 2*Iy*w_i_e(3)*dq4*q1 + 2*Ix*w_i_e(3)^2*q1*q3^3 - 2*Ix*w_i_e(3)^2*q1^3*q3 + 2*Ix*w_i_e(3)^2*q2^3*q4 - 2*Ix*w_i_e(3)^2*q2*q4^5 - 2*Iz*w_i_e(3)^2*q1*q3^3 + 2*Iz*w_i_e(3)^2*q1^3*q3 - 2*Iz*w_i_e(3)^2*q2^3*q4 + 2*Iz*w_i_e(3)^2*q2*q4^5 - 2*Ix*w_i_e(3)^2*q1*q2^2*q3 + 2*Ix*w_i_e(3)^2*q1^2*q2*q4 - 2*Ix*w_i_e(3)^2*q2*q3^2*q4 + 2*Ix*w_i_e(3)^2*q1*q3*q4^4 + 2*Iz*w_i_e(3)^2*q1*q2^2*q3 - 2*Iz*w_i_e(3)^2*q1^2*q2*q4 + 2*Iz*w_i_e(3)^2*q2*q3^2*q4 - 2*Iz*w_i_e(3)^2*q1*q3*q4^4 + 2*Ix*w_i_e(3)*q1*q3*wz - 2*Ix*w_i_e(3)*q2*q4*wz - 2*Iz*w_i_e(3)*q1*q3*wz + 2*Iz*w_i_e(3)*q2*q4*wz)/Iy;
-omega_dot_z = -(Tcz + Tdz - Ix*wx*wy + Iy*wx*wy - 2*Iz*w_i_e(3)*dq1*q1 - 2*Iz*w_i_e(3)*dq2*q2 + 2*Iz*w_i_e(3)*dq3*q3 + 4*Iz*w_i_e(3)*dq4*q4^3 - 4*Ix*w_i_e(3)^2*q1*q2*q3^2 + 4*Ix*w_i_e(3)^2*q1*q2*q4^2 - 4*Ix*w_i_e(3)^2*q1^2*q3*q4 + 4*Ix*w_i_e(3)^2*q2^2*q3*q4 + 4*Iy*w_i_e(3)^2*q1*q2*q3^2 - 4*Iy*w_i_e(3)^2*q1*q2*q4^2 + 4*Iy*w_i_e(3)^2*q1^2*q3*q4 - 4*Iy*w_i_e(3)^2*q2^2*q3*q4 - 2*Ix*w_i_e(3)*q1*q4*wx - 2*Ix*w_i_e(3)*q2*q3*wx - 2*Ix*w_i_e(3)*q1*q3*wy + 2*Iy*w_i_e(3)*q1*q4*wx + 2*Iy*w_i_e(3)*q2*q3*wx + 2*Ix*w_i_e(3)*q2*q4*wy + 2*Iy*w_i_e(3)*q1*q3*wy - 2*Iy*w_i_e(3)*q2*q4*wy)/Iz;
+omega_dot_x = (Tcx + Tdx + Iy*wy*wz - Iz*wy*wz - Iy*q1^2*wE*wy - Iy*q2^2*wE*wy + Iy*q3^2*wE*wy + Iy*q4^2*wE*wy + Iz*q1^2*wE*wy + Iz*q2^2*wE*wy - Iz*q3^2*wE*wy - Iz*q4^2*wE*wy + 2*Iy*q1*q4^3*wE^2 + 2*Iy*q2*q3^3*wE^2 - 2*Iy*q1^3*q4*wE^2 - 2*Iy*q2^3*q3*wE^2 - 2*Iz*q1*q4^3*wE^2 - 2*Iz*q2*q3^3*wE^2 + 2*Iz*q1^3*q4*wE^2 + 2*Iz*q2^3*q3*wE^2 - 2*Ix*dq1*q3*wE - 2*Ix*dq3*q1*wE + 2*Ix*dq2*q4*wE + 2*Ix*dq4*q2*wE - 2*Iy*q1^2*q2*q3*wE^2 - 2*Iy*q1*q2^2*q4*wE^2 + 2*Iy*q1*q3^2*q4*wE^2 + 2*Iy*q2*q3*q4^2*wE^2 + 2*Iz*q1^2*q2*q3*wE^2 + 2*Iz*q1*q2^2*q4*wE^2 - 2*Iz*q1*q3^2*q4*wE^2 - 2*Iz*q2*q3*q4^2*wE^2 + 2*Iy*q1*q4*wE*wz + 2*Iy*q2*q3*wE*wz - 2*Iz*q1*q4*wE*wz - 2*Iz*q2*q3*wE*wz)/Ix;
+omega_dot_y = -(Ix*wx*wz - Tdy - Tcy - Iz*wx*wz - Ix*q1^2*wE*wx - Ix*q2^2*wE*wx + Ix*q3^2*wE*wx + Ix*q4^2*wE*wx + Iz*q1^2*wE*wx + Iz*q2^2*wE*wx - Iz*q3^2*wE*wx - Iz*q4^2*wE*wx + 2*Ix*q1*q3^3*wE^2 - 2*Ix*q1^3*q3*wE^2 - 2*Ix*q2*q4^3*wE^2 + 2*Ix*q2^3*q4*wE^2 - 2*Iz*q1*q3^3*wE^2 + 2*Iz*q1^3*q3*wE^2 + 2*Iz*q2*q4^3*wE^2 - 2*Iz*q2^3*q4*wE^2 + 2*Iy*dq1*q4*wE + 2*Iy*dq2*q3*wE + 2*Iy*dq3*q2*wE + 2*Iy*dq4*q1*wE - 2*Ix*q1*q2^2*q3*wE^2 + 2*Ix*q1^2*q2*q4*wE^2 + 2*Ix*q1*q3*q4^2*wE^2 - 2*Ix*q2*q3^2*q4*wE^2 + 2*Iz*q1*q2^2*q3*wE^2 - 2*Iz*q1^2*q2*q4*wE^2 - 2*Iz*q1*q3*q4^2*wE^2 + 2*Iz*q2*q3^2*q4*wE^2 + 2*Ix*q1*q3*wE*wz - 2*Ix*q2*q4*wE*wz - 2*Iz*q1*q3*wE*wz + 2*Iz*q2*q4*wE*wz)/Iy;
+omega_dot_z = (Tcz + Tdz + Ix*wx*wy - Iy*wx*wy + 2*Iz*dq1*q1*wE + 2*Iz*dq2*q2*wE - 2*Iz*dq3*q3*wE - 2*Iz*dq4*q4*wE + 4*Ix*q1*q2*q3^2*wE^2 - 4*Ix*q1*q2*q4^2*wE^2 + 4*Ix*q1^2*q3*q4*wE^2 - 4*Ix*q2^2*q3*q4*wE^2 - 4*Iy*q1*q2*q3^2*wE^2 + 4*Iy*q1*q2*q4^2*wE^2 - 4*Iy*q1^2*q3*q4*wE^2 + 4*Iy*q2^2*q3*q4*wE^2 + 2*Ix*q1*q4*wE*wx + 2*Ix*q2*q3*wE*wx + 2*Ix*q1*q3*wE*wy - 2*Iy*q1*q4*wE*wx - 2*Iy*q2*q3*wE*wx - 2*Ix*q2*q4*wE*wy - 2*Iy*q1*q3*wE*wy + 2*Iy*q2*q4*wE*wy)/Iz;
 
 %ACCELERATION FROM TRANSLATIONAL EOM
-acc_x = Fdx/Msc - (GM/(norm(r_sc)^3))*x;
-acc_y = Fdy/Msc - (GM/(norm(r_sc)^3))*y;
-acc_z = Fdz/Msc - (GM/(norm(r_sc)^3))*z;
+acc_x = (Fdx - (GM_E/((norm(r_sc))^3))*x)/Msc;
+acc_y = (Fdy - (GM_E/((norm(r_sc))^3))*y)/Msc;
+acc_z = (Fdz - (GM_E/((norm(r_sc))^3))*z)/Msc;
 
 
 %BUILD THE VECTORS
