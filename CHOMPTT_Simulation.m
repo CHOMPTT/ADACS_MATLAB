@@ -1,15 +1,11 @@
 %main.m -------------------------------------------------------------------
 clear all;
 
-%TIME VECTOR (s)
-t_start = 1;
-t_end = 10001;
-t_step = 10;
-t = t_start:t_step:t_end;%time vector in seconds
-
 %VARIABLE(S) INITIALIZATION
 %Prev_B_Vect = [0, 0, 0];
 wE = 0.7292115 * 10^-4;  %Earth's angular velocity in (rad/s) ECI/ECEF  
+GM_E = 3.986004415e+14;   % (m3/s2)
+
 w_e_s = [0 ; 0; 0];                 %S/C angular velocity w.r.t ECEF in S/C frame assumed given by sensors
 q = [0; 0; 0; 1];                   %Quaternion matrix, assumed given by sensors
 
@@ -17,8 +13,17 @@ R= 6378137;                 %radius of the earth, m
 height = 400*1000;          % altitude of satellite, m
 r_initial = R + height;     % Initial radius of the satellite in orbit (m)
 r_sc = [0; 0; r_initial];   % position of satellite in ECI  
-vel_sc = [8000; 0; 0];      % tangential velocity of satellite in ECI
-Fd = importdata('ElaNaXIX_DisturbanceForces.mat');% Disturbance force vector in ECI ref. frame, in Newtons
+vCirc = sqrt(GM_E/r_initial); % Get initial velocity of a circular orbit
+vel_sc = [vCirc; 0; 0];      % tangential velocity of satellite in ECI
+T = 2*pi*sqrt(((r_initial)^3)/GM_E); % sec << Calculate orbit period
+    
+%TIME VECTOR (s)
+t_start = 1;
+t_end = 3*T;    % 3 orbits
+t_step = 1;
+t = t_start:t_step:t_end;%time vector in seconds
+
+Fd_vec = importdata('ElaNaXIX_DisturbanceForces.mat');% Disturbance force vector in ECI ref. frame, in Newtons
 
 %Sat inertia constants
 Msc=3;      %Spacecraft Mass := 3Kg
@@ -33,6 +38,7 @@ Rcom_i = [Rx ; Ry; Rz];% distance from c.o.m to side of s/c in direction of unit
         
 %State Vector
 state = [r_sc ; vel_sc ; w_e_s ; q];
+
 %state_vec = zeros(1:length(t));
 %state(1)=r_sc(1)=x position of satellite in ECI
 %state(2)=r_sc(2)=y position of satellite in ECI
@@ -67,8 +73,8 @@ for i=1:length(t)
         R_s_i = R_s_e*R_e_i;
 
         %DISTURBANCE FORCE & TORQUE BLOCK 
-        Fd_s = R_s_i * Fd(:,i);     % Disturbance force expressed in S/C ref. frame
-        Td = cross(Rcom_i, Fd_s);   % Compute the disturbance Torque from Fd expressed in S/C Ref. Frame
+%         Fd_s = R_s_i * Fd_vec(:,i);     % Disturbance force expressed in S/C ref. frame
+%         Td = cross(Rcom_i, Fd_s);   % Compute the disturbance Torque from Fd expressed in S/C Ref. Frame
         
         %EPS/MODE BLOCK 
         %Select a mode for the system you want to run (RW or MT) by uncommenting
@@ -78,7 +84,7 @@ for i=1:length(t)
 
         %CONTROLS BLOCK 
          if EPS_MODE == 'DETUMBLE';
-             k = 4*10^4;%Proportional Gain
+             k = 4*10^4; %Proportional Gain
              MAX_DIPOLE = 0.03774; %Am^2 %Hardware Limitation
              [Tc , Prev_B_Vect] = B_DOT_CONTROL(k, state, MAX_DIPOLE, i, t_step, Prev_B_Vect);
          end
@@ -114,6 +120,9 @@ for i=1:length(t)
 
         %DYNAMICS BLOCK
         %RK4 Integrator
+        Td = zeros(3,1);
+        Tc = zeros(3,1);
+        Fd = zeros(3,1);
             k1 = CHOMPTT_EOM(t(i)           , state              , Tc, Fd, Td);     
             k2 = CHOMPTT_EOM(t(i) + t_step/2, state + t_step*k1/2, Tc, Fd, Td); 
             k3 = CHOMPTT_EOM(t(i) + t_step/2, state + t_step*k2/2, Tc, Fd, Td); 
@@ -122,6 +131,10 @@ for i=1:length(t)
             state_vec(:,i) = state; % Save the state vector for later
 end % end of simulation
 
-Plot_State(state_vec,t)
+figure, plot(t./3600, state_vec(1:3,:)./1000), grid on,...
+        title('SC position'),...
+        xlabel('time (hr)'),...
+        ylabel('position (km)'),...
+        legend('x','y','z');
 
 %end of main.m ------------------------------------------------------------------
