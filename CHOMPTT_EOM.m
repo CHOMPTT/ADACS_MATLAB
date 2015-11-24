@@ -77,9 +77,9 @@ omega_dot_y = -(Ix*wx*wz - Tdy - Tcy - Iz*wx*wz - Ix*q1^2*wE*wx - Ix*q2^2*wE*wx 
 omega_dot_z = (Tcz + Tdz + Ix*wx*wy - Iy*wx*wy + 2*Iz*dq1*q1*wE + 2*Iz*dq2*q2*wE - 2*Iz*dq3*q3*wE - 2*Iz*dq4*q4*wE + 4*Ix*q1*q2*q3^2*wE^2 - 4*Ix*q1*q2*q4^2*wE^2 + 4*Ix*q1^2*q3*q4*wE^2 - 4*Ix*q2^2*q3*q4*wE^2 - 4*Iy*q1*q2*q3^2*wE^2 + 4*Iy*q1*q2*q4^2*wE^2 - 4*Iy*q1^2*q3*q4*wE^2 + 4*Iy*q2^2*q3*q4*wE^2 + 2*Ix*q1*q4*wE*wx + 2*Ix*q2*q3*wE*wx + 2*Ix*q1*q3*wE*wy - 2*Iy*q1*q4*wE*wx - 2*Iy*q2*q3*wE*wx - 2*Ix*q2*q4*wE*wy - 2*Iy*q1*q3*wE*wy + 2*Iy*q2*q4*wE*wy)/Iz;
 
 %ACCELERATION FROM TRANSLATIONAL EOM
-acc_x = (Fdx - (GM_E/((norm(r_sc))^3))*x)/Msc;
-acc_y = (Fdy - (GM_E/((norm(r_sc))^3))*y)/Msc;
-acc_z = (Fdz - (GM_E/((norm(r_sc))^3))*z)/Msc;
+acc_x = (Fdx/Msc - (GM_E/((norm(r_sc))^3))*x);
+acc_y = (Fdy/Msc - (GM_E/((norm(r_sc))^3))*y);
+acc_z = (Fdz/Msc - (GM_E/((norm(r_sc))^3))*z);
 
 
 %BUILD THE VECTORS
