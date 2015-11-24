@@ -12,7 +12,7 @@
 % OUTPUT:
 %   state derivative
 
-function [state_dot] = CHOMPTT_EOM(state, Tc, Fd, Td, w_i_e, R_s_i)     
+function [state_dot] = CHOMPTT_EOM( t, state, Tc, Fd, Td, w_i_e)     
 
 %GET STATE VARIABLES
 x  =  state(1);        
@@ -34,11 +34,11 @@ wy = omega_y;
 wz = omega_z;
 q = [q1;q2;q3;q4];
 omega = [omega_x; omega_y;omega_z];
-
+% t = 1;
 %CONSTANT(s)
 %List any constants you might use here 
-%R_s_e = [q(1)^2-q(2)^2-q(3)^2+q(4)^2, 2*(q(1)*q(2)+q(3)*q(4)), 2*(q(1)*q(3)-q(2)*q(4)); 2*(q(1)*q(2)-q(3)*q(4)), -q(1)^2+q(2)^2-q(3)^2+q(4)^2, 2*(q(2)*q(3)+q(1)*q(4)); 2*(q(1)*q(3)+q(2)*q(4)), 2*(q(2)*q(3)+q(1)*q(4)), -q(1)^2-q(2)^2+q(3)^2+q(4)^4] ;
-GM = 398600.4415*(10^9); %m^3/s^2
+R_s_e = [q(1)^2-q(2)^2-q(3)^2+q(4)^2, 2*(q(1)*q(2)+q(3)*q(4)), 2*(q(1)*q(3)-q(2)*q(4)); 2*(q(1)*q(2)-q(3)*q(4)), -q(1)^2+q(2)^2-q(3)^2+q(4)^2, 2*(q(2)*q(3)+q(1)*q(4)); 2*(q(1)*q(3)+q(2)*q(4)), 2*(q(2)*q(3)+q(1)*q(4)), -q(1)^2-q(2)^2+q(3)^2+q(4)^4] ;
+GM = 398600.4415 *(10^9); %m^3/s^2
 
 %SAT INERTIA CONSTANTS
 Msc=3;%Spacecraft Mass := 3Kg
@@ -73,22 +73,15 @@ dq3 = dq(3);
 dq4 = -0.5*dot(omega,[q1;q2;q3]);
 
 %ANGULAR ACCELERATION FROM ROTATIONAL EOM
-%omega_dot = inv(inertia_matrix)*(cross((-1*(R_s_i*w_i_e+omega)),inertia_matrix*(R_s_i*w_i_e+omega))-(Tc+Td));
+omega_dot = inv(inertia_matrix)*(cross((-1*(R_s_e*w_i_e+omega)),inertia_matrix*(R_s_e*w_i_e+omega))-(Tc+Td));
 omega_dot_x = -(Tcx + Tdx - Iy*wy*wz + Iz*wy*wz + Iy*w_i_e(3)*q1^2*wy + Iy*w_i_e(3)*q2^2*wy - Iy*w_i_e(3)*q3^2*wy - Iy*w_i_e(3)*q4^4*wy - Iz*w_i_e(3)*q1^2*wy - Iz*w_i_e(3)*q2^2*wy + Iz*w_i_e(3)*q3^2*wy + Iz*w_i_e(3)*q4^4*wy + 2*Ix*w_i_e(3)*dq1*q3 + 2*Ix*w_i_e(3)*dq3*q1 - 2*Ix*w_i_e(3)*dq2*q4 - 2*Ix*w_i_e(3)*dq4*q2 - 2*Iy*w_i_e(3)^2*q2*q3^3 + 2*Iy*w_i_e(3)^2*q1^3*q4 + 2*Iy*w_i_e(3)^2*q2^3*q3 - 2*Iy*w_i_e(3)^2*q1*q4^5 + 2*Iz*w_i_e(3)^2*q2*q3^3 - 2*Iz*w_i_e(3)^2*q1^3*q4 - 2*Iz*w_i_e(3)^2*q2^3*q3 + 2*Iz*w_i_e(3)^2*q1*q4^5 + 2*Iy*w_i_e(3)^2*q1^2*q2*q3 + 2*Iy*w_i_e(3)^2*q1*q2^2*q4 - 2*Iy*w_i_e(3)^2*q1*q3^2*q4 - 2*Iy*w_i_e(3)^2*q2*q3*q4^4 - 2*Iz*w_i_e(3)^2*q1^2*q2*q3 - 2*Iz*w_i_e(3)^2*q1*q2^2*q4 + 2*Iz*w_i_e(3)^2*q1*q3^2*q4 + 2*Iz*w_i_e(3)^2*q2*q3*q4^4 - 2*Iy*w_i_e(3)*q1*q4*wz - 2*Iy*w_i_e(3)*q2*q3*wz + 2*Iz*w_i_e(3)*q1*q4*wz + 2*Iz*w_i_e(3)*q2*q3*wz)/Ix;
 omega_dot_y = -(Tcy + Tdy + Ix*wx*wz - Iz*wx*wz - Ix*w_i_e(3)*q1^2*wx - Ix*w_i_e(3)*q2^2*wx + Ix*w_i_e(3)*q3^2*wx + Ix*w_i_e(3)*q4^4*wx + Iz*w_i_e(3)*q1^2*wx + Iz*w_i_e(3)*q2^2*wx - Iz*w_i_e(3)*q3^2*wx - Iz*w_i_e(3)*q4^4*wx + 2*Iy*w_i_e(3)*dq1*q4 + 2*Iy*w_i_e(3)*dq2*q3 + 2*Iy*w_i_e(3)*dq3*q2 + 2*Iy*w_i_e(3)*dq4*q1 + 2*Ix*w_i_e(3)^2*q1*q3^3 - 2*Ix*w_i_e(3)^2*q1^3*q3 + 2*Ix*w_i_e(3)^2*q2^3*q4 - 2*Ix*w_i_e(3)^2*q2*q4^5 - 2*Iz*w_i_e(3)^2*q1*q3^3 + 2*Iz*w_i_e(3)^2*q1^3*q3 - 2*Iz*w_i_e(3)^2*q2^3*q4 + 2*Iz*w_i_e(3)^2*q2*q4^5 - 2*Ix*w_i_e(3)^2*q1*q2^2*q3 + 2*Ix*w_i_e(3)^2*q1^2*q2*q4 - 2*Ix*w_i_e(3)^2*q2*q3^2*q4 + 2*Ix*w_i_e(3)^2*q1*q3*q4^4 + 2*Iz*w_i_e(3)^2*q1*q2^2*q3 - 2*Iz*w_i_e(3)^2*q1^2*q2*q4 + 2*Iz*w_i_e(3)^2*q2*q3^2*q4 - 2*Iz*w_i_e(3)^2*q1*q3*q4^4 + 2*Ix*w_i_e(3)*q1*q3*wz - 2*Ix*w_i_e(3)*q2*q4*wz - 2*Iz*w_i_e(3)*q1*q3*wz + 2*Iz*w_i_e(3)*q2*q4*wz)/Iy;
 omega_dot_z = -(Tcz + Tdz - Ix*wx*wy + Iy*wx*wy - 2*Iz*w_i_e(3)*dq1*q1 - 2*Iz*w_i_e(3)*dq2*q2 + 2*Iz*w_i_e(3)*dq3*q3 + 4*Iz*w_i_e(3)*dq4*q4^3 - 4*Ix*w_i_e(3)^2*q1*q2*q3^2 + 4*Ix*w_i_e(3)^2*q1*q2*q4^2 - 4*Ix*w_i_e(3)^2*q1^2*q3*q4 + 4*Ix*w_i_e(3)^2*q2^2*q3*q4 + 4*Iy*w_i_e(3)^2*q1*q2*q3^2 - 4*Iy*w_i_e(3)^2*q1*q2*q4^2 + 4*Iy*w_i_e(3)^2*q1^2*q3*q4 - 4*Iy*w_i_e(3)^2*q2^2*q3*q4 - 2*Ix*w_i_e(3)*q1*q4*wx - 2*Ix*w_i_e(3)*q2*q3*wx - 2*Ix*w_i_e(3)*q1*q3*wy + 2*Iy*w_i_e(3)*q1*q4*wx + 2*Iy*w_i_e(3)*q2*q3*wx + 2*Ix*w_i_e(3)*q2*q4*wy + 2*Iy*w_i_e(3)*q1*q3*wy - 2*Iy*w_i_e(3)*q2*q4*wy)/Iz;
-
-%NEED vel_x vel_y vel_z
-%NEED new r_sc
 
 %ACCELERATION FROM TRANSLATIONAL EOM
 acc_x = Fdx/Msc - (GM/norm(r_sc)^3)*x;
 acc_y = Fdy/Msc - (GM/norm(r_sc)^3)*y;
 acc_z = Fdz/Msc - (GM/norm(r_sc)^3)*z;
-
-% acc_x = -(GM/norm(r_sc)^3)*x;
-% acc_y = -(GM/norm(r_sc)^3)*y;
-% acc_z = -(GM/norm(r_sc)^3)*z;
 
 %BUILD THE VECTORS
 vel   = [vel_x; vel_y; vel_z];

@@ -23,7 +23,7 @@
 %
 %%%Plotting state vectors versus time
 %%%Each state variable has its own window  
-function Plot_State(state_vec, t);
+function Plot_State(state_vec, t)
    for k=1:13
 	figure(k)
 	plot(t(1:numel(t)-1),state_vec(k,:));
