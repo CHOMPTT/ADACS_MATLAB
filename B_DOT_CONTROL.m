@@ -3,6 +3,7 @@
 % This file is used to simulate the magnatorquer detumble controller (B dot)
 %
 % INPUT:
+
 %   k = the proportional gain (scalar) 
 %   state = the state vector (13 x 1)
     %   state(1)=r_sc(1)=x position of satellite in ECI
@@ -27,17 +28,18 @@
 %   Prev_B_Vect = the current B vect will be used in next loop 
 
 % %% convert the current R-vector from S/C into ECEF from there use ECEF Position to LLA 
-function [Tc Prev_B_Vect] = B_DOT_CONTROL(K, state, MAX_DIPOLE, i, t_step, Prev_B_Vect);
+function [Tc, Prev_B_Vect] = B_DOT_CONTROL(K, state, MAX_DIPOLE, i, t_step, Prev_B_Vect);
  r_sct = transpose(state(1:3));
- lla = ecef2lla(r_sct); 
- [current_B_Vect, H, DEC, DIP, F] = wrldmagm(lla(3), lla(1), lla(2), decyear(2015,10,25),'2015');
+ lla = ecef2lla(r_sct);
+ altitude = (norm(state(1:3))-6378137)/1000;
+ [current_B_Vect, H, DEC, DIP, F] = wrldmagm(altitude, lla(1), lla(2), decyear(2015,10,25),'2015');
  current_B_Vect = current_B_Vect*10^-09;
      if (i<2);
         B_DOT=[0,0,0];
      else
         B_DOT= (current_B_Vect-Prev_B_Vect)*(1/t_step);
      end
-     M = -K*B_DOT;
+     M = -K*B_DOT;q
      if M == 0
      M = [0,0,0];
      end
