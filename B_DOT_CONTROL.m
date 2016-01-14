@@ -28,18 +28,16 @@
 %   Prev_B_Vect = the current B vect will be used in next loop 
 
 % %% convert the current R-vector from S/C into ECEF from there use ECEF Position to LLA 
-function [Tc, Prev_B_Vect] = B_DOT_CONTROL(K, state, MAX_DIPOLE, i, t_step, Prev_B_Vect);
- r_sct = transpose(state(1:3));
- lla = ecef2lla(r_sct);
- altitude = (norm(state(1:3))-6378137)/1000;
- [current_B_Vect, H, DEC, DIP, F] = wrldmagm(altitude, lla(1), lla(2), decyear(2015,10,25),'2015');
- current_B_Vect = current_B_Vect*10^-09;
+function [Tc, Prev_B_Vect] = B_DOT_CONTROL(K, r_sc_ecef, MAX_DIPOLE, i, t_step, Prev_B_Vect, R_s_e);
+ lla = ecef2lla(r_sc_ecef'); % lla(p) - p is ecef in m, retuns lla: lat deg, lon deg, alt m
+ [current_B_Vect, H, DEC, DIP, F] = wrldmagm(lla(3), lla(1), lla(2), decyear(2015,10,25),'2015');
+ current_B_Vect = R_s_e*current_B_Vect; %  change ecef to sc body frame
      if (i<2);
         B_DOT=[0,0,0];
      else
         B_DOT= (current_B_Vect-Prev_B_Vect)*(1/t_step);
      end
-     M = -K*B_DOT;q
+     M = -K*B_DOT;
      if M == 0
      M = [0,0,0];
      end
@@ -56,7 +54,7 @@ function [Tc, Prev_B_Vect] = B_DOT_CONTROL(K, state, MAX_DIPOLE, i, t_step, Prev
  	       M(j,1) = -MAX_DIPOLE;
         end
      end
- Tc =  cross(M,current_B_Vect);
+ Tc =  cross(M,current_B_Vect); % sc
  Prev_B_Vect = current_B_Vect;
 end
 
