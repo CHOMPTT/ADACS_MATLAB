@@ -27,8 +27,14 @@
 
 function Tc = RW_PD_CONTROL(k, c, state, MAX_TORQUE);
 qt = transpose(state(10:13));
-error = Quat2Eul321(qt); 
-error_dot = state(7:9);
+qt = [qt(4),qt(1),qt(2),qt(3)];
+error = quat2eul(qt)
+sigma = 0.006977;
+error = error + normrnd(0,(sigma));
+error_dot = state(7:9)
+sigma = 0.000277;
+error_dot = error_dot + normrnd(0,(sigma));
+
 %max_torque = 3.75e-3;
 
 T_x = -k(1)*(error(3)) - c(1)*(error_dot(1));
@@ -40,11 +46,7 @@ T = [T_x; T_y; T_z];
 
 for j = 1:3
    if abs(T(j,1)) >= MAX_TORQUE
-        if sign(T(j,1)) == 1
-            T(j,1) = MAX_TORQUE;
-        else
-            T(j,1) = -MAX_TORQUE;
-        end
+        T(j,1) = sign(T(j,1))*MAX_TORQUE;
     end
 end
 Tc = T;
