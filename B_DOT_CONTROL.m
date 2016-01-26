@@ -28,7 +28,10 @@
 %   Prev_B_Vect = the current B vect will be used in next loop 
 
 % %% convert the current R-vector from S/C into ECEF from there use ECEF Position to LLA 
-function [Tc, Prev_B_Vect] = B_DOT_CONTROL(K, r_sc_ecef, MAX_DIPOLE, i, t_step, Prev_B_Vect, R_s_e);
+function [Tc, Prev_B_Vect] = B_DOT_CONTROL(K, r_sc_ecef,  i, t_step, Prev_B_Vect, R_s_e,hardware_vec);
+ MAX_DIPOLE = hardware_vec(3);
+ MAG_SENSE_NOISE=hardware_vec(6);
+ MT_NOISE=hardware_vec(4);
  lla = ecef2lla(r_sc_ecef'); % lla(p) - p is ecef in m, retuns lla: lat deg, lon deg, alt m
  [current_B_Vect, H, DEC, DIP, F] = wrldmagm(lla(3), lla(1), lla(2), decyear(2015,10,25),'2015');
  current_B_Vect = R_s_e*current_B_Vect; %  change ecef to sc body frame
@@ -36,6 +39,7 @@ function [Tc, Prev_B_Vect] = B_DOT_CONTROL(K, r_sc_ecef, MAX_DIPOLE, i, t_step, 
         B_DOT=[0,0,0];
      else
         B_DOT= (current_B_Vect-Prev_B_Vect)*(1/t_step);
+        B_DOT = B_DOT + normrnd(0,(MAG_SENSE_NOISE));
      end
      M = -K*B_DOT;
      if M == 0
@@ -55,6 +59,7 @@ function [Tc, Prev_B_Vect] = B_DOT_CONTROL(K, r_sc_ecef, MAX_DIPOLE, i, t_step, 
         end
      end
  Tc =  cross(M,current_B_Vect); % sc
+ Tc = Tc + normrnd(0,(MT_NOISE))
  Prev_B_Vect = current_B_Vect;
 end
 

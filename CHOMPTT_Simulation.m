@@ -24,7 +24,7 @@ t_step = 1;
 t = t_start:t_step:t_end;%time vector in seconds
 
 Fd_vec = importdata('ElaNaXIX_DisturbanceForces.mat');% Disturbance force vector in ECI ref. frame, in Newtons
-
+hardware_vec=importdata('hardware_limitations.mat');%Noise and max torques
 %Sat inertia constants
 Msc=3;      %Spacecraft Mass := 3Kg
 a=0.1;      %Spacecraft length along x-axis  (m)
@@ -86,40 +86,23 @@ for i=1:length(t)
         %CONTROLS BLOCK 
          if EPS_MODE == 'DETUMBLE';
              k = 1*10^-13; %Proportional Gain
-             MAX_DIPOLE = 0.03774; %Am^2 %Hardware Limitation
              r_sc_ecef = R_e_i* state(1:3);
-             [Tc, Prev_B_Vect] = B_DOT_CONTROL(k, r_sc_ecef, MAX_DIPOLE, i, t_step, Prev_B_Vect, R_s_e);
+             [Tc, Prev_B_Vect] = B_DOT_CONTROL(k, r_sc_ecef, i, t_step, Prev_B_Vect, R_s_e, hardware_vec);
          end
  
          if EPS_MODE == 'POINTING';
             k = [0.02;0.025 ;0.02];%Proportional Gain
             c = [0.05;0.05; 0.05];%Derivative Gain
-            MAX_TORQUE = 3.75e-3; %N*m %Hardware Limitation
-            Tc = RW_PD_CONTROL(k, c, state, MAX_TORQUE);
+            Tc = RW_PD_CONTROL(k, c, state, hardware_vec);
          end
 
          if EPS_MODE == 'DRIFTING';
             Tc = [0;0;0];
          end
 
-        %ACTUATION NOISE BLOCK 
-        %Add actuation noise to the commanded torque as an 'actual torque'
-         if EPS_MODE == 'DETUMBLE';
-            sigma = 0;
-         end
 
-         if EPS_MODE == 'POINTING';
-            sigma = 0.04;
-         end
-
-         if EPS_MODE == 'DRIFTING';
-            sigma = 0;
-         end
-         Tc = Tc + Tc*normrnd(0,(sigma));
          Tc_vec(1:3,i)= Tc;
          
-        %MEASUREMENT NOISE BLOCK 
-        %Add sensor noise to the 'true' state from the dynamics block 
 
         %DYNAMICS BLOCK
         %RK4 Integrator
