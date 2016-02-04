@@ -80,8 +80,8 @@ for i=1:length(t)
         
         %EPS/MODE BLOCK 
         %Select a mode for the system you want to run (RW or MT) by uncommenting
-          %EPS_MODE = 'POINTING';
-          EPS_MODE = 'DETUMBLE';
+          EPS_MODE = 'POINTING';
+          %EPS_MODE = 'DETUMBLE';
           %EPS_MODE = 'DRIFTING';
         %CONTROLS BLOCK 
          if EPS_MODE == 'DETUMBLE';
