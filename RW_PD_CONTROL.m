@@ -25,16 +25,15 @@
 %   Tc is the control torque (3 x 1)
 %
 
-function Tc = RW_PD_CONTROL(k, c, state, hardware_vec);
-MAX_TORQUE = hardware_vec(1);
+function Tc = RW_PD_CONTROL(k, c, state, MAX_TORQUE);
 qt = transpose(state(10:13));
 qt = [qt(4),qt(1),qt(2),qt(3)];
-error = quat2eul(qt);
-SUN_SENSE_NOISE = hardware_vec(5);
-error = error + normrnd(0,(SUN_SENSE_NOISE));
-error_dot = state(7:9);
-GYRO_NOISE = hardware_vec(7);
-error_dot = error_dot + normrnd(0,(GYRO_NOISE));
+error = quat2eul(qt)
+sigma = 0.006977;
+error = error + normrnd(0,(sigma));
+error_dot = state(7:9)
+sigma = 0.000277;
+error_dot = error_dot + normrnd(0,(sigma));
 
 %max_torque = 3.75e-3;
 
@@ -50,7 +49,5 @@ for j = 1:3
         T(j,1) = sign(T(j,1))*MAX_TORQUE;
     end
 end
-RW_NOISE = hardware_vec(2); 
-Tc = T+normrnd(0,(RW_NOISE));
-
+Tc = T;
 end
